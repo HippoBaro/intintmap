@@ -258,48 +258,25 @@ func (m *Map) Size() int {
 	return m.size
 }
 
-// Keys returns a channel for iterating all keys.
-func (m *Map) Keys() chan uint64 {
-	c := make(chan uint64, 10)
-	go func() {
-		data := m.data
-		var k uint64
+// Iter call the provided function for each key, value pair.
+// The provided function should return true if the iteration should continue
+func (m *Map) Iter(fn func(uint64, uint64) bool) {
+	data := m.data
+	var k uint64
 
-		if m.hasFreeKey {
-			c <- FREE_KEY // value is m.freeVal
+	if m.hasFreeKey {
+		if !fn(FREE_KEY, m.freeVal) {
+			return
 		}
+	}
 
-		for i := 0; i < len(data); i += 2 {
-			k = data[i]
-			if k == FREE_KEY {
-				continue
-			}
-			c <- k // value is data[i+1]
+	for i := 0; i < len(data); i += 2 {
+		k = data[i]
+		if k == FREE_KEY {
+			continue
 		}
-		close(c)
-	}()
-	return c
-}
-
-// Items returns a channel for iterating all key-value pairs.
-func (m *Map) Items() chan [2]uint64 {
-	c := make(chan [2]uint64, 10)
-	go func() {
-		data := m.data
-		var k uint64
-
-		if m.hasFreeKey {
-			c <- [2]uint64{FREE_KEY, m.freeVal}
+		if !fn(k, data[i+1]) {
+			return
 		}
-
-		for i := 0; i < len(data); i += 2 {
-			k = data[i]
-			if k == FREE_KEY {
-				continue
-			}
-			c <- [2]uint64{k, data[i+1]}
-		}
-		close(c)
-	}()
-	return c
+	}
 }

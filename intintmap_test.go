@@ -40,9 +40,11 @@ func TestMapSimple(t *testing.T) {
 	}
 	n := len(m0)
 
-	for k := range m.Keys() {
+	m.Iter(func(k uint64, _ uint64) bool {
 		m0[k] = -k
-	}
+		return true
+	})
+
 	if n != len(m0) {
 		t.Errorf("get unexpected more keys")
 	}
@@ -62,12 +64,14 @@ func TestMapSimple(t *testing.T) {
 	}
 	n = len(m0)
 
-	for kv := range m.Items() {
-		m0[kv[0]] = -kv[1]
-		if kv[0] != kv[1] {
+	m.Iter(func(k uint64, v uint64) bool {
+		m0[k] = -v
+		if v != v {
 			t.Errorf("didn't get expected key-value pair")
 		}
-	}
+		return true
+	})
+
 	if n != len(m0) {
 		t.Errorf("get unexpected more keys")
 	}
