@@ -15,10 +15,10 @@ func TestMapSimple(t *testing.T) {
 	// --------------------------------------------------------------------
 	// Put() and Get()
 
-	for i = 0; i < 20000; i += 2 {
+	for i = 1; i < 20000; i += 2 {
 		m.Put(i, i)
 	}
-	for i = 0; i < 20000; i += 2 {
+	for i = 1; i < 20000; i += 2 {
 		if v, ok = m.Get(i); !ok || v != i {
 			t.Errorf("didn't get expected value")
 		}
@@ -35,7 +35,7 @@ func TestMapSimple(t *testing.T) {
 	// Keys()
 
 	m0 := make(map[uint64]uint64, 1000)
-	for i = 0; i < 20000; i += 2 {
+	for i = 1; i < 20000; i += 2 {
 		m0[i] = i
 	}
 	n := len(m0)
@@ -59,7 +59,7 @@ func TestMapSimple(t *testing.T) {
 	// Items()
 
 	m0 = make(map[uint64]uint64, 1000)
-	for i = 0; i < 20000; i += 2 {
+	for i = 1; i < 20000; i += 2 {
 		m0[i] = i
 	}
 	n = len(m0)
@@ -85,10 +85,10 @@ func TestMapSimple(t *testing.T) {
 	// --------------------------------------------------------------------
 	// Del()
 
-	for i = 0; i < 20000; i += 2 {
+	for i = 1; i < 20000; i += 2 {
 		m.Del(i)
 	}
-	for i = 0; i < 20000; i += 2 {
+	for i = 1; i < 20000; i += 2 {
 		if _, ok = m.Get(i); ok {
 			t.Errorf("didn't get expected 'not found' flag")
 		}
@@ -100,10 +100,10 @@ func TestMapSimple(t *testing.T) {
 	// --------------------------------------------------------------------
 	// Put() and Get()
 
-	for i = 0; i < 20000; i += 2 {
+	for i = 1; i < 20000; i += 2 {
 		m.Put(i, i*2)
 	}
-	for i = 0; i < 20000; i += 2 {
+	for i = 1; i < 20000; i += 2 {
 		if v, ok = m.Get(i); !ok || v != i*2 {
 			t.Errorf("didn't get expected value")
 		}
@@ -122,8 +122,8 @@ func TestMap(t *testing.T) {
 	step := uint64(61)
 
 	var i uint64
-	m.Put(0, 12345)
-	for i = 1; i < 100000000; i += step {
+	m.Put(1, 12345)
+	for i = 2; i < 100000000; i += step {
 		m.Put(i, i+7)
 		m.Put(-i, i-7)
 
@@ -134,7 +134,7 @@ func TestMap(t *testing.T) {
 			t.Errorf("expected %d as value for key %d, got %d", i-7, -i, v)
 		}
 	}
-	for i = 1; i < 100000000; i += step {
+	for i = 2; i < 100000000; i += step {
 		if v, ok = m.Get(i); !ok || v != i+7 {
 			t.Errorf("expected %d as value for key %d, got %d", i+7, i, v)
 		}
@@ -149,7 +149,7 @@ func TestMap(t *testing.T) {
 		}
 	}
 
-	if v, ok = m.Get(0); !ok || v != 12345 {
+	if v, ok = m.Get(1); !ok || v != 12345 {
 		t.Errorf("expected 12345 for key 0")
 	}
 }
@@ -160,7 +160,7 @@ func BenchmarkFillSequential(b *testing.B) {
 		b.ReportAllocs()
 		m := make(map[uint64]uint64, 2048)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				m[j] = 0
 			}
 		}
@@ -170,7 +170,7 @@ func BenchmarkFillSequential(b *testing.B) {
 		b.ReportAllocs()
 		m := New(2048, 0.6)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				m.Put(j, 0)
 			}
 		}
@@ -183,7 +183,7 @@ func BenchmarkFillSequentialPreAllocated(b *testing.B) {
 		b.ReportAllocs()
 		m := make(map[uint64]uint64, 1_000_000)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				m[j] = 0
 			}
 		}
@@ -193,7 +193,7 @@ func BenchmarkFillSequentialPreAllocated(b *testing.B) {
 		b.ReportAllocs()
 		m := New(1_000_000, 0.6)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				m.Put(j, 0)
 			}
 		}
@@ -206,8 +206,8 @@ func BenchmarkFillRandom(b *testing.B) {
 		b.ReportAllocs()
 		m := make(map[uint64]uint64, 2048)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
-				m[rand.Uint64()] = 0
+			for j := uint64(1); j < 1_000_000; j++ {
+				m[rand.Uint64()+1] = 0
 			}
 		}
 	})
@@ -216,8 +216,8 @@ func BenchmarkFillRandom(b *testing.B) {
 		b.ReportAllocs()
 		m := New(2048, 0.6)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
-				m.Put(rand.Uint64(), 0)
+			for j := uint64(1); j < 1_000_000; j++ {
+				m.Put(rand.Uint64()+1, 0)
 			}
 		}
 	})
@@ -229,8 +229,8 @@ func BenchmarkFillRandomPreAllocated(b *testing.B) {
 		b.ReportAllocs()
 		m := make(map[uint64]uint64, 1_000_000)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
-				m[rand.Uint64()] = 0
+			for j := uint64(1); j < 1_000_000; j++ {
+				m[rand.Uint64()+1] = 0
 			}
 		}
 	})
@@ -239,8 +239,8 @@ func BenchmarkFillRandomPreAllocated(b *testing.B) {
 		b.ReportAllocs()
 		m := New(1_000_000, 0.6)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
-				m.Put(rand.Uint64(), 0)
+			for j := uint64(1); j < 1_000_000; j++ {
+				m.Put(rand.Uint64()+1, 0)
 			}
 		}
 	})
@@ -250,7 +250,7 @@ func BenchmarkLookupSequential(b *testing.B) {
 	fillIntInt := func() *Map {
 		m := New(2048, 0.6)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				m.Put(j, 0)
 			}
 		}
@@ -259,7 +259,7 @@ func BenchmarkLookupSequential(b *testing.B) {
 	fillStd := func() map[uint64]uint64 {
 		m := make(map[uint64]uint64, 2048)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				m[j] = 0
 			}
 		}
@@ -273,7 +273,7 @@ func BenchmarkLookupSequential(b *testing.B) {
 
 		var dummy uint64
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				dummy, _ = m[j]
 			}
 		}
@@ -286,7 +286,7 @@ func BenchmarkLookupSequential(b *testing.B) {
 
 		var dummy uint64
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				dummy, _ = m.Get(j)
 			}
 		}
@@ -298,7 +298,7 @@ func BenchmarkLookupRandom(b *testing.B) {
 	fillIntInt := func() *Map {
 		m := New(2048, 0.6)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				m.Put(j, 0)
 			}
 		}
@@ -307,7 +307,7 @@ func BenchmarkLookupRandom(b *testing.B) {
 	fillStd := func() map[uint64]uint64 {
 		m := make(map[uint64]uint64, 2048)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				m[j] = 0
 			}
 		}
@@ -322,8 +322,8 @@ func BenchmarkLookupRandom(b *testing.B) {
 
 		var dummy uint64
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
-				dummy, _ = m[uint64(rand.Int63n(1_000_000))]
+			for j := uint64(1); j < 1_000_000; j++ {
+				dummy, _ = m[uint64(rand.Int63n(1_000_000))+1]
 			}
 		}
 		runtime.KeepAlive(dummy)
@@ -335,8 +335,8 @@ func BenchmarkLookupRandom(b *testing.B) {
 
 		var dummy uint64
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
-				dummy, _ = m.Get(uint64(rand.Int63n(1_000_000)))
+			for j := uint64(1); j < 1_000_000; j++ {
+				dummy, _ = m.Get(uint64(rand.Int63n(1_000_000)) + 1)
 			}
 		}
 		runtime.KeepAlive(dummy)
@@ -347,7 +347,7 @@ func BenchmarkLookupNoHit(b *testing.B) {
 	fillIntInt := func() *Map {
 		m := New(2048, 0.6)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				m.Put(j, 0)
 			}
 		}
@@ -356,7 +356,7 @@ func BenchmarkLookupNoHit(b *testing.B) {
 	fillStd := func() map[uint64]uint64 {
 		m := make(map[uint64]uint64, 2048)
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				m[j] = 0
 			}
 		}
@@ -371,7 +371,7 @@ func BenchmarkLookupNoHit(b *testing.B) {
 
 		var dummy uint64
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				dummy, _ = m[uint64(rand.Int63n(1_000_000)+1_000_000)]
 			}
 		}
@@ -384,7 +384,7 @@ func BenchmarkLookupNoHit(b *testing.B) {
 
 		var dummy uint64
 		for i := 0; i < b.N; i++ {
-			for j := uint64(0); j < 1_000_000; j++ {
+			for j := uint64(1); j < 1_000_000; j++ {
 				dummy, _ = m.Get(uint64(rand.Int63n(1_000_000) + 1_000_000))
 			}
 		}

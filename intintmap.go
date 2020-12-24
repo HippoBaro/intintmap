@@ -7,14 +7,11 @@ import (
 	"math"
 )
 
-// INT_PHI is for scrambling the keys
-const INT_PHI = 0x9E3779B9
-
-// FREE_KEY is the 'free' key
-const FREE_KEY = 0
+// IntPhi is for scrambling the keys
+const IntPhi = uint64(0x9E3779B9)
 
 func phiMix(x uint64) uint64 {
-	h := x * INT_PHI
+	h := x * IntPhi
 	return h ^ (h >> 16)
 }
 
@@ -27,9 +24,6 @@ type Map struct {
 
 	mask  uint64 // mask to calculate the original position
 	mask2 uint64
-
-	hasFreeKey bool   // do we have 'free' key in the map?
-	freeVal    uint64 // value of 'free' key
 }
 
 func nextPowerOf2(x uint32) uint32 {
@@ -81,10 +75,7 @@ func New(size int, fillFactor float64) *Map {
 
 // Get returns the value if the key is found.
 func (m *Map) Get(key uint64) (uint64, bool) {
-	if key == FREE_KEY {
-		if m.hasFreeKey {
-			return m.freeVal, true
-		}
+	if key == 0 {
 		return 0, false
 	}
 
@@ -94,7 +85,7 @@ func (m *Map) Get(key uint64) (uint64, bool) {
 	}
 	k := m.data[ptr]
 
-	if k == FREE_KEY { // end of chain already
+	if k == 0 { // end of chain already
 		return 0, false
 	}
 	if k == key { // we check FREE prior to this call
@@ -104,7 +95,7 @@ func (m *Map) Get(key uint64) (uint64, bool) {
 	for {
 		ptr = (ptr + 2) & m.mask2
 		k = m.data[ptr]
-		if k == FREE_KEY {
+		if k == 0 {
 			return 0, false
 		}
 		if k == key {
@@ -115,19 +106,14 @@ func (m *Map) Get(key uint64) (uint64, bool) {
 
 // Put adds or updates key with value val.
 func (m *Map) Put(key uint64, val uint64) {
-	if key == FREE_KEY {
-		if !m.hasFreeKey {
-			m.size++
-		}
-		m.hasFreeKey = true
-		m.freeVal = val
-		return
+	if key == 0 {
+		panic("zero key are illegal")
 	}
 
 	ptr := (phiMix(key) & m.mask) << 1
 	k := m.data[ptr]
 
-	if k == FREE_KEY { // end of chain already
+	if k == 0 { // end of chain already
 		m.data[ptr] = key
 		m.data[ptr+1] = val
 		if m.size >= m.threshold {
@@ -145,7 +131,7 @@ func (m *Map) Put(key uint64, val uint64) {
 		ptr = (ptr + 2) & m.mask2
 		k = m.data[ptr]
 
-		if k == FREE_KEY {
+		if k == 0 {
 			m.data[ptr] = key
 			m.data[ptr+1] = val
 			if m.size >= m.threshold {
@@ -164,9 +150,7 @@ func (m *Map) Put(key uint64, val uint64) {
 
 // Del deletes a key and its value.
 func (m *Map) Del(key uint64) {
-	if key == FREE_KEY {
-		m.hasFreeKey = false
-		m.size--
+	if key == 0 {
 		return
 	}
 
@@ -177,7 +161,7 @@ func (m *Map) Del(key uint64) {
 		m.shiftKeys(ptr)
 		m.size--
 		return
-	} else if k == FREE_KEY { // end of chain already
+	} else if k == 0 { // end of chain already
 		return
 	}
 
@@ -189,7 +173,7 @@ func (m *Map) Del(key uint64) {
 			m.shiftKeys(ptr)
 			m.size--
 			return
-		} else if k == FREE_KEY {
+		} else if k == 0 {
 			return
 		}
 
@@ -206,8 +190,8 @@ func (m *Map) shiftKeys(pos uint64) uint64 {
 		pos = (last + 2) & m.mask2
 		for {
 			k = data[pos]
-			if k == FREE_KEY {
-				data[last] = FREE_KEY
+			if k == 0 {
+				data[last] = 0
 				return last
 			}
 
@@ -238,16 +222,12 @@ func (m *Map) rehash() {
 	copy(data, m.data)
 
 	m.data = make([]uint64, newCapacity)
-	if m.hasFreeKey { // reset size
-		m.size = 1
-	} else {
-		m.size = 0
-	}
+	m.size = 0
 
 	var o uint64
 	for i := 0; i < len(data); i += 2 {
 		o = data[i]
-		if o != FREE_KEY {
+		if o != 0 {
 			m.Put(o, data[i+1])
 		}
 	}
@@ -264,15 +244,9 @@ func (m *Map) Iter(fn func(uint64, uint64) bool) {
 	data := m.data
 	var k uint64
 
-	if m.hasFreeKey {
-		if !fn(FREE_KEY, m.freeVal) {
-			return
-		}
-	}
-
 	for i := 0; i < len(data); i += 2 {
 		k = data[i]
-		if k == FREE_KEY {
+		if k == 0 {
 			continue
 		}
 		if !fn(k, data[i+1]) {
