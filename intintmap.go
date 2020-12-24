@@ -1,4 +1,4 @@
-// Package intintmap is a fast int64 key -> int64 value map.
+// Package intintmap is a fast uint64 key -> uint64 value map.
 //
 // It is copied nearly verbatim from http://java-performance.info/implementing-world-fastest-java-int-to-int-hash-map/
 package intintmap
@@ -13,23 +13,23 @@ const INT_PHI = 0x9E3779B9
 // FREE_KEY is the 'free' key
 const FREE_KEY = 0
 
-func phiMix(x int64) int64 {
+func phiMix(x uint64) uint64 {
 	h := x * INT_PHI
 	return h ^ (h >> 16)
 }
 
 // Map is a map-like data-structure for int64s
 type Map struct {
-	data       []int64 // interleaved keys and values
+	data       []uint64 // interleaved keys and values
 	fillFactor float64
 	threshold  int // we will resize a map once it reaches this size
 	size       int
 
-	mask  int64 // mask to calculate the original position
-	mask2 int64
+	mask  uint64 // mask to calculate the original position
+	mask2 uint64
 
-	hasFreeKey bool  // do we have 'free' key in the map?
-	freeVal    int64 // value of 'free' key
+	hasFreeKey bool   // do we have 'free' key in the map?
+	freeVal    uint64 // value of 'free' key
 }
 
 func nextPowerOf2(x uint32) uint32 {
@@ -71,16 +71,16 @@ func New(size int, fillFactor float64) *Map {
 
 	capacity := arraySize(size, fillFactor)
 	return &Map{
-		data:       make([]int64, 2*capacity),
+		data:       make([]uint64, 2*capacity),
 		fillFactor: fillFactor,
 		threshold:  int(math.Floor(float64(capacity) * fillFactor)),
-		mask:       int64(capacity - 1),
-		mask2:      int64(2*capacity - 1),
+		mask:       uint64(capacity - 1),
+		mask2:      uint64(2*capacity - 1),
 	}
 }
 
 // Get returns the value if the key is found.
-func (m *Map) Get(key int64) (int64, bool) {
+func (m *Map) Get(key uint64) (uint64, bool) {
 	if key == FREE_KEY {
 		if m.hasFreeKey {
 			return m.freeVal, true
@@ -89,7 +89,7 @@ func (m *Map) Get(key int64) (int64, bool) {
 	}
 
 	ptr := (phiMix(key) & m.mask) << 1
-	if ptr < 0 || ptr >= int64(len(m.data)) { // Check to help to compiler to eliminate a bounds check below.
+	if ptr < 0 || ptr >= uint64(len(m.data)) { // Check to help to compiler to eliminate a bounds check below.
 		return 0, false
 	}
 	k := m.data[ptr]
@@ -114,7 +114,7 @@ func (m *Map) Get(key int64) (int64, bool) {
 }
 
 // Put adds or updates key with value val.
-func (m *Map) Put(key int64, val int64) {
+func (m *Map) Put(key uint64, val uint64) {
 	if key == FREE_KEY {
 		if !m.hasFreeKey {
 			m.size++
@@ -163,7 +163,7 @@ func (m *Map) Put(key int64, val int64) {
 }
 
 // Del deletes a key and its value.
-func (m *Map) Del(key int64) {
+func (m *Map) Del(key uint64) {
 	if key == FREE_KEY {
 		m.hasFreeKey = false
 		m.size--
@@ -196,10 +196,10 @@ func (m *Map) Del(key int64) {
 	}
 }
 
-func (m *Map) shiftKeys(pos int64) int64 {
+func (m *Map) shiftKeys(pos uint64) uint64 {
 	// Shift entries with the same hash.
-	var last, slot int64
-	var k int64
+	var last, slot uint64
+	var k uint64
 	var data = m.data
 	for {
 		last = pos
@@ -231,20 +231,20 @@ func (m *Map) shiftKeys(pos int64) int64 {
 func (m *Map) rehash() {
 	newCapacity := len(m.data) * 2
 	m.threshold = int(math.Floor(float64(newCapacity/2) * m.fillFactor))
-	m.mask = int64(newCapacity/2 - 1)
-	m.mask2 = int64(newCapacity - 1)
+	m.mask = uint64(newCapacity/2 - 1)
+	m.mask2 = uint64(newCapacity - 1)
 
-	data := make([]int64, len(m.data)) // copy of original data
+	data := make([]uint64, len(m.data)) // copy of original data
 	copy(data, m.data)
 
-	m.data = make([]int64, newCapacity)
+	m.data = make([]uint64, newCapacity)
 	if m.hasFreeKey { // reset size
 		m.size = 1
 	} else {
 		m.size = 0
 	}
 
-	var o int64
+	var o uint64
 	for i := 0; i < len(data); i += 2 {
 		o = data[i]
 		if o != FREE_KEY {
@@ -259,11 +259,11 @@ func (m *Map) Size() int {
 }
 
 // Keys returns a channel for iterating all keys.
-func (m *Map) Keys() chan int64 {
-	c := make(chan int64, 10)
+func (m *Map) Keys() chan uint64 {
+	c := make(chan uint64, 10)
 	go func() {
 		data := m.data
-		var k int64
+		var k uint64
 
 		if m.hasFreeKey {
 			c <- FREE_KEY // value is m.freeVal
@@ -282,14 +282,14 @@ func (m *Map) Keys() chan int64 {
 }
 
 // Items returns a channel for iterating all key-value pairs.
-func (m *Map) Items() chan [2]int64 {
-	c := make(chan [2]int64, 10)
+func (m *Map) Items() chan [2]uint64 {
+	c := make(chan [2]uint64, 10)
 	go func() {
 		data := m.data
-		var k int64
+		var k uint64
 
 		if m.hasFreeKey {
-			c <- [2]int64{FREE_KEY, m.freeVal}
+			c <- [2]uint64{FREE_KEY, m.freeVal}
 		}
 
 		for i := 0; i < len(data); i += 2 {
@@ -297,7 +297,7 @@ func (m *Map) Items() chan [2]int64 {
 			if k == FREE_KEY {
 				continue
 			}
-			c <- [2]int64{k, data[i+1]}
+			c <- [2]uint64{k, data[i+1]}
 		}
 		close(c)
 	}()
