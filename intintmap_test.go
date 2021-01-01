@@ -154,6 +154,52 @@ func TestMap(t *testing.T) {
 	}
 }
 
+func TestReset(t *testing.T) {
+	m := New(10, 0.6)
+	test := func() {
+		var ok bool
+		var v uint64
+
+		step := uint64(61)
+
+		var i uint64
+		m.Put(1, 12345)
+		for i = 2; i < 100000000; i += step {
+			m.Put(i, i+7)
+			m.Put(-i, i-7)
+
+			if v, ok = m.Get(i); !ok || v != i+7 {
+				t.Errorf("expected %d as value for key %d, got %d", i+7, i, v)
+			}
+			if v, ok = m.Get(-i); !ok || v != i-7 {
+				t.Errorf("expected %d as value for key %d, got %d", i-7, -i, v)
+			}
+		}
+		for i = 2; i < 100000000; i += step {
+			if v, ok = m.Get(i); !ok || v != i+7 {
+				t.Errorf("expected %d as value for key %d, got %d", i+7, i, v)
+			}
+			if v, ok = m.Get(-i); !ok || v != i-7 {
+				t.Errorf("expected %d as value for key %d, got %d", i-7, -i, v)
+			}
+
+			for j := i + 1; j < i+step; j++ {
+				if v, ok = m.Get(j); ok {
+					t.Errorf("expected 'not found' flag for %d, found %d", j, v)
+				}
+			}
+		}
+
+		if v, ok = m.Get(1); !ok || v != 12345 {
+			t.Errorf("expected 12345 for key 0")
+		}
+	}
+
+	test()
+	m.Clear()
+	test()
+}
+
 func BenchmarkFillSequential(b *testing.B) {
 	b.ReportAllocs()
 	b.Run("Std", func(b *testing.B) {

@@ -73,6 +73,14 @@ func New(size int, fillFactor float64) *Map {
 	}
 }
 
+// Clear clears all key->value associations in the map but preserves memory
+func (m *Map) Clear() {
+	m.size = 0
+	for i := range m.data {
+		m.data[i] = 0
+	}
+}
+
 // Get returns the value if the key is found.
 func (m *Map) Get(key uint64) (uint64, bool) {
 	if key == 0 {
