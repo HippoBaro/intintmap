@@ -246,6 +246,11 @@ func (m *Map) Size() int {
 	return m.size
 }
 
+// Cap returns the capacity of the map
+func (m *Map) Cap() int {
+	return m.threshold
+}
+
 // Iter call the provided function for each key, value pair.
 // The provided function should return true if the iteration should continue
 func (m *Map) Iter(fn func(uint64, uint64) bool) {

@@ -1,6 +1,7 @@
 package intintmap
 
 import (
+	"math"
 	"math/rand"
 	"runtime"
 	"testing"
@@ -29,6 +30,10 @@ func TestMapSimple(t *testing.T) {
 
 	if m.Size() != int(20000/2) {
 		t.Errorf("size (%d) is not right, should be %d", m.Size(), int(20000/2))
+	}
+
+	if m.Cap() != int(math.Floor(float64(len(m.data)/2)*0.99)) {
+		t.Errorf("cap (%d) is not right, should be %d", m.Cap(), int(math.Floor(float64(len(m.data)/2)*0.99)))
 	}
 
 	// --------------------------------------------------------------------
