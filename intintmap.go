@@ -226,17 +226,12 @@ func (m *Map) rehash() {
 	m.mask = uint64(newCapacity/2 - 1)
 	m.mask2 = uint64(newCapacity - 1)
 
-	data := make([]uint64, len(m.data)) // copy of original data
-	copy(data, m.data)
-
-	m.data = make([]uint64, newCapacity)
+	data := m.data
+	m.data = make([]uint64, newCapacity, newCapacity)
 	m.size = 0
-
-	var o uint64
 	for i := 0; i < len(data); i += 2 {
-		o = data[i]
-		if o != 0 {
-			m.Put(o, data[i+1])
+		if data[i] != 0 {
+			m.Put(data[i], data[i+1])
 		}
 	}
 }
