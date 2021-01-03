@@ -1,6 +1,7 @@
 package intintmap
 
 import (
+	"github.com/stretchr/testify/assert"
 	"math"
 	"math/rand"
 	"runtime"
@@ -157,6 +158,32 @@ func TestMap(t *testing.T) {
 	if v, ok = m.Get(1); !ok || v != 12345 {
 		t.Errorf("expected 12345 for key 0")
 	}
+}
+
+func TestFixedMap(t *testing.T) {
+	capacity := ArraySize(312, 0.6)
+
+	m := NewWithMemory(make([]uint64, capacity, capacity), 0.6)
+	var ok bool
+	var v uint64
+
+	var i uint64
+	assert.True(t, m.TryPut(1, 12345))
+	for i = 1; i < uint64(m.Cap()); i++ {
+		assert.True(t, m.TryPut(i, i+7))
+		if v, ok = m.Get(i); !ok || v != i+7 {
+			t.Errorf("expected %d as value for key %d, got %d", i+7, i, v)
+		}
+	}
+	for i = 1; i < uint64(m.Cap()); i++ {
+		assert.True(t, m.TryPut(i, i-7))
+		if v, ok = m.Get(i); !ok || v != i-7 {
+			t.Errorf("expected %d as value for key %d, got %d", i+7, i, v)
+		}
+	}
+
+	// mo more space
+	assert.False(t, m.TryPut(math.MaxUint64, 0))
 }
 
 func TestReset(t *testing.T) {

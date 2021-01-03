@@ -45,12 +45,14 @@ func nextPowerOf2(x uint32) uint32 {
 	return x + 1
 }
 
-func arraySize(exp int, fill float64) int {
+// ArraySize returns a suitable allocation size
+// This can be used in conjunction with NewWithMemory to provide your own memory
+func ArraySize(exp int, fill float64) int {
 	s := nextPowerOf2(uint32(math.Ceil(float64(exp) / fill)))
 	if s < 2 {
 		s = 2
 	}
-	return int(s)
+	return int(s) * 2
 }
 
 // New returns a map initialized with n spaces and uses the stated fillFactor.
@@ -63,13 +65,34 @@ func New(size int, fillFactor float64) *Map {
 		panic("Size must be positive")
 	}
 
-	capacity := arraySize(size, fillFactor)
+	capacity := ArraySize(size, fillFactor)
 	return &Map{
-		data:       make([]uint64, 2*capacity),
+		data:       make([]uint64, capacity),
 		fillFactor: fillFactor,
-		threshold:  int(math.Floor(float64(capacity) * fillFactor)),
-		mask:       uint64(capacity - 1),
-		mask2:      uint64(2*capacity - 1),
+		threshold:  int(math.Floor(float64(capacity/2) * fillFactor)),
+		mask:       uint64(capacity/2 - 1),
+		mask2:      uint64(capacity - 1),
+	}
+}
+
+// NewWithMemory behaves like New but you provide the memory
+func NewWithMemory(mem []uint64, fillFactor float64) *Map {
+	if fillFactor <= 0 || fillFactor >= 1 {
+		panic("FillFactor must be in (0, 1)")
+	}
+	if len(mem) < 2 {
+		panic("Memory must be > 2")
+	}
+	if (len(mem) & (len(mem) - 1)) != 0 {
+		panic("Memory must be power of two")
+	}
+
+	return &Map{
+		data:       mem,
+		fillFactor: fillFactor,
+		threshold:  int(math.Floor(float64(len(mem)/2) * fillFactor)),
+		mask:       uint64(len(mem)/2 - 1),
+		mask2:      uint64(len(mem) - 1),
 	}
 }
 
@@ -153,7 +176,49 @@ func (m *Map) Put(key uint64, val uint64) {
 			return
 		}
 	}
+}
 
+// TryPut behaves like Put but will no grow the map if there is not enough space available
+func (m *Map) TryPut(key uint64, val uint64) bool {
+	if key == 0 {
+		panic("zero key are illegal")
+	}
+
+	ptr := (phiMix(key) & m.mask) << 1
+	k := m.data[ptr]
+
+	if k == 0 { // end of chain already
+		if m.size+1 >= m.threshold {
+			return false
+		}
+		m.data[ptr] = key
+		m.data[ptr+1] = val
+		m.size++
+		return true
+	} else if k == key { // overwrite existed value
+		m.data[ptr+1] = val
+		return true
+	}
+
+	for {
+		ptr = (ptr + 2) & m.mask2
+		k = m.data[ptr]
+
+		if k == 0 {
+			if m.size+1 >= m.threshold {
+				return false
+			}
+
+			m.data[ptr] = key
+			m.data[ptr+1] = val
+			m.size++
+			return true
+		} else if k == key {
+			m.data[ptr+1] = val
+			return true
+		}
+	}
+	return false
 }
 
 // Del deletes a key and its value.
