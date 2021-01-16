@@ -8,7 +8,10 @@ import (
 )
 
 // IntPhi is for scrambling the keys
-const IntPhi = uint64(0x9E3779B9)
+const (
+	IntPhi     = uint64(0x9E3779B9)
+	minMapSize = 8
+)
 
 func phiMix(x uint64) uint64 {
 	h := x * IntPhi
@@ -62,7 +65,7 @@ func New(size int, fillFactor float64) *Map {
 		panic("FillFactor must be in (0, 1)")
 	}
 	if size <= 0 {
-		panic("Size must be positive")
+		size = minMapSize
 	}
 
 	capacity := ArraySize(size, fillFactor)
@@ -138,7 +141,7 @@ func (m *Map) Get(key uint64) (uint64, bool) {
 // Put adds or updates key with value val.
 func (m *Map) Put(key uint64, val uint64) {
 	if key == 0 {
-		panic("zero key are illegal")
+		panic("zero keys are illegal")
 	}
 
 	ptr := (phiMix(key) & m.mask) << 1
@@ -181,7 +184,7 @@ func (m *Map) Put(key uint64, val uint64) {
 // TryPut behaves like Put but will no grow the map if there is not enough space available
 func (m *Map) TryPut(key uint64, val uint64) bool {
 	if key == 0 {
-		panic("zero key are illegal")
+		return false
 	}
 
 	ptr := (phiMix(key) & m.mask) << 1
@@ -218,7 +221,6 @@ func (m *Map) TryPut(key uint64, val uint64) bool {
 			return true
 		}
 	}
-	return false
 }
 
 // Del deletes a key and its value.
